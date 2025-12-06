@@ -1,9 +1,13 @@
-- hosts: htz-apps
+- hosts: vi-apps
   become: yes
   vars:
     api_app_dir: /opt/server-info-api
 
   tasks:
+    - name: Change system hostname
+      hostname:
+        name: "{{ hostname }}"
+
     - name: Install packages
       apt:
         name: "{{ packages }}"
