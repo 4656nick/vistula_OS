@@ -1,0 +1,22 @@
+server {
+    listen {{ server_info_nginx_listen }};
+    server_name {{ server_info_nginx_server_name }};
+    
+    root {{ server_info_target_dir }};
+    index {{ server_info_index_file }};
+
+    # Отдаём статику по /
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    # Проксируем API на FastAPI
+    location /api/ {
+        proxy_pass http://{{ server_info_api_host }}:{{ server_info_api_port }}/;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}

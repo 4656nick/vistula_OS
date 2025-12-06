@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+HOSTNAME=$(hostname)
+KERNEL=$(uname -r)
+OS=$(grep PRETTY_NAME /etc/os-release | cut -d= -f2- | tr -d '"')
+IP=$(hostname -I | awk '{print $1}')
+
+TARGET_DIR="{{ server_info_target_dir }}"
+mkdir -p "$TARGET_DIR"
+
+cat <<EOF >"$TARGET_DIR/{{ server_info_index_file }}"
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{{ server_info_page_title }}</title>
+    <style>
+      body { font-family: sans-serif; margin: 40px; }
+      h1 { color: #333; }
+      li { margin: 5px 0; }
+      code { background: #f4f4f4; padding: 2px 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>{{ server_info_header }}</h1>
+    <ul>
+      <li>Hostname: <code>$HOSTNAME</code></li>
+      <li>Kernel: <code>$KERNEL</code></li>
+      <li>OS: <code>$OS</code></li>
+      <li>IP: <code>$IP</code></li>
+    </ul>
+    <p>API is availble through <code>/api/...</code></p>
+  </body>
+</html>
+EOF

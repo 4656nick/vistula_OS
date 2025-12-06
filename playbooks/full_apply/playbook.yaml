@@ -1,0 +1,99 @@
+- hosts: htz-apps
+  become: yes
+  vars:
+    api_app_dir: /opt/server-info-api
+
+  tasks:
+    - name: Install packages
+      apt:
+        name: "{{ packages }}"
+        state: present
+        update_cache: yes
+
+    - name: Deploy collect_facts script
+      template:
+        src: files/collect_facts.sh.jinja
+        dest: /usr/local/bin/collect_facts.sh
+        mode: '0755'
+
+    - name: Generate index.html via collect_facts
+      command: /usr/local/bin/collect_facts.sh
+
+    - name: Setup cron to update index.html every hour
+      cron:
+        name: "update server info page"
+        job: "/usr/local/bin/collect_facts.sh"
+        minute: "0"
+
+    - name: Create API app directory
+      file:
+        path: "{{ api_app_dir }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy FastAPI main.py
+      copy:
+        src: files/app/main.py
+        dest: "{{ api_app_dir }}/main.py"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Create venv
+      command: python3 -m venv {{ api_app_dir }}/venv
+      args:
+        creates: "{{ api_app_dir }}/venv/bin/activate"
+
+    - name: Install FastAPI and Uvicorn
+      command: "{{ api_app_dir }}/venv/bin/pip install fastapi 'uvicorn[standard]'"
+      args:
+        chdir: "{{ api_app_dir }}"
+
+    - name: Deploy systemd service for API
+      template:
+        src: files/server-info-api.service.jinja
+        dest: /etc/systemd/system/server-info-api.service
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart server-info-api
+
+    - name: Deploy nginx config for server-info
+      template:
+        src: files/server-info.conf.jinja
+        dest: /etc/nginx/sites-available/server-info.conf
+        mode: '0644'
+      notify:
+        - Reload nginx
+
+    - name: Enable nginx site
+      file:
+        src: /etc/nginx/sites-available/server-info.conf
+        dest: /etc/nginx/sites-enabled/server-info.conf
+        state: link
+      notify:
+        - Reload nginx
+
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify:
+        - Reload nginx
+
+  handlers:
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Restart server-info-api
+      service:
+        name: server-info-api
+        state: restarted
+        enabled: yes
+
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

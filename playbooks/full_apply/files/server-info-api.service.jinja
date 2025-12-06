@@ -1,0 +1,14 @@
+[Unit]
+Description=Server Info FastAPI service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory={{ server_info_api_workdir }}
+Environment="PATH={{ server_info_api_venv_path }}/bin"
+ExecStart={{ server_info_api_venv_path }}/bin/uvicorn main:app --host {{ server_info_api_host }} --port {{ server_info_api_port }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
