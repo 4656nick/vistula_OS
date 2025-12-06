@@ -3,6 +3,7 @@ packages:
  - curl
  - htop
  - nginx
+ - cron
  - python3
  - python3-venv
  - python3-pip
