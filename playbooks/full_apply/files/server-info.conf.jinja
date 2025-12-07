@@ -5,12 +5,12 @@ server {
     root {{ server_info_target_dir }};
     index {{ server_info_index_file }};
 
-    # Отдаём статику по /
+    # Static page
     location / {
         try_files $uri $uri/ =404;
     }
 
-    # Проксируем API на FastAPI
+    # FastAPI
     location /api/ {
         proxy_pass http://{{ server_info_api_host }}:{{ server_info_api_port }}/;
 
